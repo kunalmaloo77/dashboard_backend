@@ -8,8 +8,8 @@ clientRouter
 .post('/', clientController.createClient)
 .get('/', clientController.getAllClients)
 .get('/:id', clientController.getClient)
-.put('/:id', clientController.updateClient)
-.patch('/:id', clientController.replaceClient)
+.put('/:id', clientController.replaceClient)
+.patch('/:id', clientController.updateClient)
 .delete('/:id', clientController.deleteClient)
 
 module.exports = clientRouter;

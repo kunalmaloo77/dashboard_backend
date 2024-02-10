@@ -6,15 +6,17 @@ const skuSchema = new Schema({
     amount: Number
 })
 const clientSchema = new Schema({
-    clientcode: { type: String, required: true, unique: true},
-    fname: { type: String, required: true },
-    lname: { type: String, required: true },
-    mobilenumber : {type : String, required : true},
-    address : {type : String, required: true},
-    postalcode : {type : Number, required : true},
-    city: {type : String, required: true},
-    state: {type : String, required: true},
-    skus:{type : [skuSchema], default : undefined}, 
+    clientcode: {type: String, unique: true},
+    fname: {type: String},
+    lname: {type: String},
+    mobilenumber : {type : String},
+    address : {type : String},
+    postalcode : {type : Number},
+    city: {type : String},
+    state: {type : String},
+    skus:{type : [skuSchema], default : undefined},
+    awb:{type: String},
+    status:{type:String}, 
 });
 
 exports.clientModel = mongoose.model('Client', clientSchema);

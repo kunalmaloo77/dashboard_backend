@@ -11,7 +11,7 @@ exports.getAllClients = async (req, res) => {
     }  
 };
 
-//Read single GET /client/:id
+//Read single GET /clients/:id
 exports.getClient = async(req, res) => {
     const id = req.params.id;
     const client = await clientModel.findById(id);
@@ -33,7 +33,7 @@ exports.createClient = async(req, res) => {
     }          
 };
 
-// Update PUT /clients/:id
+// Replace PUT /clients/:id
 exports.replaceClient = async (req, res) => {
     const id = req.params.id;
     try{
@@ -46,7 +46,7 @@ exports.replaceClient = async (req, res) => {
         }
 };
 
-//Update PATCH /client/:id
+//Update PATCH /clients/:id
 exports.updateClient =  async (req, res) => {
     const id = req.params.id;
     try{
@@ -59,7 +59,7 @@ exports.updateClient =  async (req, res) => {
     }
 };
 
-//Delete DELETE /client/:id
+//Delete DELETE /clients/:id
 exports.deleteClient = async (req, res) => {
     try{
         const doc = await clientModel.findOneAndDelete({_id:id})

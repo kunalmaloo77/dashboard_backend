@@ -1,18 +1,20 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const clientRouter = require('./routes/client');
-const dotenv = require('dotenv');
+const dotenv = require('dotenv')
 dotenv.config();
 const app = express();
 const port = 8080;
 const cors = require('cors');
+const uri = `mongodb+srv://${process.env.NAME}:${process.env.PASSWORD}@cluster0.izbn67e.mongodb.net/${process.env.DATABASE}?retryWrites=true&w=majority`
+
 main().catch((error)=>{
     console.log("promise error ->",error);
 })
 
 async function main () { 
     try {
-        await mongoose.connect('mongodb://127.0.0.1:27017/usersDB')
+        await mongoose.connect(uri);
         console.log('connected');
     } catch (error) {
         console.log("async error ->",error);
