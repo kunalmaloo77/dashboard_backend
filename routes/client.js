@@ -9,6 +9,7 @@ clientRouter
     .get('/', clientController.getAllClients)
     .get('/orders', clientController.getOrders)
     .get('/confirmed', clientController.getConfirmedOrders)
+    .get('/shipped', clientController.getShippedOrders)
     .get('/:id', clientController.getClient)
     .put('/:id', clientController.replaceClient)
     .patch('/:id', clientController.updateClient)
