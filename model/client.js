@@ -9,6 +9,7 @@ const clientSchema = new Schema({
   postalcode: { type: String },
   city: { type: String },
   state: { type: String },
+  town: { type: String },
   sku: { type: String },
   quantity: { type: String },
   amount: { type: String },
