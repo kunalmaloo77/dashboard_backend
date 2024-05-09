@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const clientRouter = require('../routes/client');
-const uploadRouter = require('../routes/upload');
+const clientRouter = require('./routes/client');
+const uploadRouter = require('./routes/upload');
 const dotenv = require('dotenv')
 dotenv.config();
 const app = express();
