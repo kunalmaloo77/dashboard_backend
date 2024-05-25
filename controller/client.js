@@ -57,7 +57,7 @@ exports.getConfirmedOrders = async (req, res) => {
 //Read clients with awb and status
 exports.getShippedOrders = async (req, res) => {
   try {
-    const shipped = await clientModel.find({ status: "shipped" });
+    const shipped = await clientModel.find({ status: { $in: ['shipped', 'out_for_delivery'] } });
     res.json(shipped);
   } catch (error) {
     console.log(error);

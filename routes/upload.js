@@ -8,8 +8,9 @@ const uploadRouter = express.Router();
 
 uploadRouter
   .post('/', upload.single('csv'), uploadController.uploadFile)
+  .post('/shopify', upload.single('csv'), uploadController.shopifyUpload)
+  .post('/delivery', upload.single('csv'), uploadController.deliveryUpload)
   .patch('/awb/bulkupload', upload.single('csv'), uploadController.updateAwbBulkUpload)
-  // .patch('/confirmed/bulkupload', upload.single('csv'), uploadController.updateConfirmedBulkUpload)
   .patch('/status', upload.single('csv'), uploadController.statusBulkupload)
 
 module.exports = uploadRouter;
