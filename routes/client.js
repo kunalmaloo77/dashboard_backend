@@ -14,6 +14,7 @@ clientRouter
   .get('/delivered', clientController.getDeliveredOrders)
   .get('/rtointransit', clientController.getRtoIntransitOrders)
   .get('/rtodelivered', clientController.getRtoDeliveredOrders)
+  .get('/rtorecieved', clientController.getRtoRecievedOrders)
   .get('/:id', clientController.getClient)
   .post('/', clientController.createClient)
   .put('/:id', clientController.replaceClient)

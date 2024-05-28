@@ -91,6 +91,15 @@ exports.getRtoDeliveredOrders = async (req, res) => {
   }
 }
 
+exports.getRtoRecievedOrders = async (req, res) => {
+  try {
+    const rtoDelivered = await clientModel.find({ status: 'rto_recieved' });
+    res.json(rtoDelivered);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 //Read single GET /clients/awb/single/:awb
 exports.getClientAwb = async (req, res) => {
   try {
