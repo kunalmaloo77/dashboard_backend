@@ -131,6 +131,37 @@ exports.getClientOrderid = async (req, res) => {
   }
 };
 
+//Update status GET /clients/awb/status/:id
+exports.updateAwbStatus = async (req, res) => {
+  try {
+    const awb = req.params.awb;
+    const client = await clientModel.findOne({ awb: awb });
+    if (!client) {
+      return res.status(404).json({ message: "AWB not found" });
+    }
+    const updatedClient = await clientModel.updateOne({ awb: awb }, { "$set": { status: "return_recieved" } });
+    res.json(updatedClient);
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+//Update status GET /clients/orderid/status/:id
+exports.updateOrderIdStatus = async (req, res) => {
+  try {
+    const orderid = req.params.orderid;
+    const oid = '#' + orderid;
+    const client = await clientModel.findOne({ orderid: oid });
+    if (!client) {
+      return res.status(404).json({ message: "OrderId not found" });
+    }
+    const updatedClient = await clientModel.updateMany({ orderid: oid }, { "$set": { status: "return_recieved" } })
+    res.json(updatedClient);
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 //Create POST /clients
 exports.createClient = async (req, res) => {
   try {

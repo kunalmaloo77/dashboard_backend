@@ -7,6 +7,8 @@ clientRouter
   .get('/', clientController.getAllClients)
   .get('/awb/single/:awb', clientController.getClientAwb)
   .get('/orderid/single/:orderid', clientController.getClientOrderid)
+  .get('/awb/status/:awb', clientController.updateAwbStatus)
+  .get('/orderid/status/:orderid', clientController.updateOrderIdStatus)
   .get('/orders', clientController.getOrders)
   .get('/withoutawb', clientController.getWithoutAwbOrders)
   .get('/confirmed', clientController.getConfirmedOrders)
