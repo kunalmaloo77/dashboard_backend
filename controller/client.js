@@ -73,6 +73,24 @@ exports.getDeliveredOrders = async (req, res) => {
   }
 }
 
+exports.getRtoIntransitOrders = async (req, res) => {
+  try {
+    const rtointransit = await clientModel.find({ status: 'returning_to_origin' });
+    res.json(rtointransit);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+exports.getRtoDeliveredOrders = async (req, res) => {
+  try {
+    const rtoDelivered = await clientModel.find({ status: 'returned_to_origin' });
+    res.json(rtoDelivered);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
 //Read single GET /clients/awb/single/:awb
 exports.getClientAwb = async (req, res) => {
   try {

@@ -1,7 +1,8 @@
 const { clientModel } = require('../model/client');
+const { maxUniqueIdModel } = require('../model/max_unique_id')
+const { Readable } = require('stream');
 const csv = require('csv-parser');
 const fs = require('fs');
-const { Readable } = require('stream');
 const result = [];
 //Create POST /upload
 exports.uploadFile = async (req, res) => {
@@ -249,91 +250,110 @@ exports.deliveryUpload = async (req, res) => {
 
   const processCSV = (stream, onData, onEnd) => {
     const parser = csv();
+    const promises = [];
+
     stream.pipe(parser)
-      .on('data', onData)
+      .on('data', (data) => {
+        const promise = onData(data);
+        promises.push(promise);
+      })
       .on('error', (error) => handleError(error, res))
-      .on('end', onEnd);
+      .on('end', async () => {
+        await Promise.all(promises);
+        onEnd();
+      });
   };
 
   try {
     const newDataArray = [];
     const updatedDataArray = [];
-    const promises = [];
+
+    // const maxUniqueIDCounters = await maxUniqueIdModel.find({});
+    // const uniqueCountersMap = {};
+
+    // maxUniqueIDCounters.forEach(counter => {
+    //   uniqueCountersMap[counter.source] = counter.maxID;
+    // });
 
     processCSV(fs.createReadStream(req.file.path), async (rowData) => {
       const orderid = rowData['Reference No.'];
-      const promise = (async () => {
-        const existingEntry = await clientModel.findOne({ orderid: orderid });
-        console.log("Existing entry->", existingEntry);
+      // const date = rowData['Pick Up Date'];
+      // const lastTwoChar = Number(date.slice(-2));
+      // const month = Number(date.slice(3, 5));
 
-        if (existingEntry) {
-          const updatedData = {
-            status: rowData["Current Status"].toLowerCase(),
-            delivered_date: rowData["Delivered Date"],
-            shipped_date: rowData["Pick Up Date"],
-            awb: rowData["Waybill"],
-          };
-          updatedDataArray.push({ query: { orderid }, update: { $set: updatedData } });
-          console.log("Updated Data array", updatedDataArray);
-        } else {
-          const extractedData = {
-            orderid,
-            name: rowData['Consignee Name'],
-            city: rowData['City'],
-            sku: rowData['Product Description'],
-            quantity: "1",
-            amount: parseFloat(rowData['Amount']).toString() || '0',
-            totalamount: rowData['Amount'] || '0',
-            date: rowData['Pick Up Date'],
-            postalcode: rowData['PIN'],
-            status: rowData["Current Status"].toLowerCase(),
-            delivered_date: rowData["Delivered Date"],
-            shipped_date: rowData["Pick Up Date"],
-            awb: rowData["Waybill"],
-          };
-          newDataArray.push(extractedData);
-        }
-      })();
-      promises.push(promise);
-    }, async () => {
-      await Promise.all(promises);
+      let unique_id;
+      const source = orderid[0] == '#' ? 'K' : 'C';
+      // let uniqueCounter = uniqueCountersMap[source];
+      // unique_id = `${source}${uniqueCounter}-${month > 3 ? lastTwoChar : lastTwoChar - 1}`;
+      unique_id = `${source}S`
+      // uniqueCountersMap[source]++;
 
-      // Bulk operations for updating existing entries and inserting new ones
-      const bulkOps = [];
-      if (updatedDataArray.length > 0) {
-        updatedDataArray.forEach(({ query, update }) => {
-          bulkOps.push({
-            updateOne: {
-              filter: query,
-              update: update,
-            },
+      const existingEntry = await clientModel.findOne({ orderid: orderid });
+      if (existingEntry) {
+        const updatedData = {
+          status: rowData["Current Status"].toLowerCase(),
+          delivered_date: rowData["Delivered Date"],
+          shipped_date: rowData["Pick Up Date"],
+          awb: rowData["Waybill"],
+          unique_id: unique_id,
+        };
+        updatedDataArray.push({ query: { orderid }, update: { $set: updatedData } });
+      } else {
+        const extractedData = {
+          orderid,
+          name: rowData['Consignee Name'],
+          city: rowData['City'],
+          sku: rowData['Product Description'],
+          quantity: "1",
+          amount: parseFloat(rowData['Amount']).toString() || '0',
+          totalamount: rowData['Amount'] || '0',
+          date: rowData['Pick Up Date'],
+          postalcode: rowData['PIN'],
+          status: rowData["Current Status"].toLowerCase(),
+          delivered_date: rowData["Delivered Date"],
+          shipped_date: rowData["Pick Up Date"],
+          awb: rowData["Waybill"],
+          unique_id: unique_id,
+        };
+        newDataArray.push(extractedData);
+      }
+    },
+      async () => {
+        // Bulk operations for updating existing entries and inserting new ones
+        const bulkOps = [];
+        if (updatedDataArray.length > 0) {
+          updatedDataArray.forEach(({ query, update }) => {
+            bulkOps.push({
+              updateOne: {
+                filter: query,
+                update: update,
+              },
+            });
           });
-        });
-      }
-      console.log("New data array->", newDataArray);
-      if (newDataArray.length > 0) {
-        try {
-          for (const newData of newDataArray) {
-            await clientModel.create(newData);
+        }
+        // console.log("bulkOPs->", bulkOps);
+        if (newDataArray.length > 0) {
+          for (let i = 0; i < newDataArray.length; i++) {
+            bulkOps.push({
+              insertOne: {
+                document: newDataArray[i]
+              }
+            });
           }
-          console.log('Inserted new entries');
-        } catch (error) {
-          console.error('Error inserting new entries:', error);
         }
-      }
 
-      console.log("Theses are bulkops->", bulkOps);
-
-      if (bulkOps.length > 0) {
-        try {
-          await clientModel.bulkWrite(bulkOps, { ordered: false });
-          console.log('Delivery Orders Uploaded');
-        } catch (error) {
-          console.log("Error bulkwriting->", error);
+        if (bulkOps.length > 0) {
+          try {
+            await clientModel.bulkWrite(bulkOps, { ordered: false });
+            console.log('Delivery Orders Uploaded');
+          } catch (error) {
+            console.log("Error bulkwriting->", error);
+          }
         }
-      }
-      res.send('CSV file uploaded and processed');
-    });
+        res.send('CSV file uploaded and processed');
+      });
+    // await maxUniqueIdModel.updateOne({ source: 'K' }, { maxID: uniqueCountersMap['K'] });
+    // await maxUniqueIdModel.updateOne({ source: 'C' }, { maxID: uniqueCountersMap['C'] });
   } catch (error) {
     handleError(error, res);
   }

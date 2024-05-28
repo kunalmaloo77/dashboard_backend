@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const clientSchema = new Schema({
+  unique_id: { type: String },
   orderid: { type: String },
   name: { type: String },
   mobilenumber: { type: String },
