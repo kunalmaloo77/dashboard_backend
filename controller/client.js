@@ -47,7 +47,7 @@ exports.getWithoutAwbOrders = async (req, res) => {
 // get clients with awb
 exports.getConfirmedOrders = async (req, res) => {
   try {
-    const confirmed = await clientModel.find({ awb: { $exists: true }, status: { $exists: false } });
+    const confirmed = await clientModel.find({ awb: { $exists: true }, status: 'ready_to_ship' });
     res.json(confirmed);
   } catch (error) {
     console.log(error);
