@@ -93,8 +93,8 @@ exports.getRtoDeliveredOrders = async (req, res) => {
 
 exports.getRtoRecievedOrders = async (req, res) => {
   try {
-    const rtoDelivered = await clientModel.find({ status: 'rto_recieved' });
-    res.json(rtoDelivered);
+    const rtoRecieved = await clientModel.find({ status: 'return_recieved' });
+    res.json(rtoRecieved);
   } catch (error) {
     console.log(error);
   }

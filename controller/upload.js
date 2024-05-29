@@ -282,7 +282,7 @@ exports.deliveryUpload = async (req, res) => {
       // const month = Number(date.slice(3, 5));
 
       let unique_id;
-      const source = orderid[0] == '#' ? 'K' : 'C';
+      const source = orderid[0] == '#' || 'K' ? 'K' : 'C';
       // let uniqueCounter = uniqueCountersMap[source];
       // unique_id = `${source}${uniqueCounter}-${month > 3 ? lastTwoChar : lastTwoChar - 1}`;
       unique_id = `${source}S`
