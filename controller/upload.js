@@ -289,16 +289,21 @@ exports.deliveryUpload = async (req, res) => {
       // uniqueCountersMap[source]++;
 
       const existingEntry = await clientModel.findOne({ orderid: orderid });
-      if (existingEntry) {
+      console.log(existingEntry);
+      if (existingEntry && existingEntry.status != 'return_recieved') {
         const updatedData = {
           status: rowData["Current Status"].toLowerCase(),
           delivered_date: rowData["Delivered Date"],
           shipped_date: rowData["Pick Up Date"],
           awb: rowData["Waybill"],
           unique_id: unique_id,
-        };
+        }
         updatedDataArray.push({ query: { orderid }, update: { $set: updatedData } });
-      } else {
+      }
+      else if (existingEntry.status === 'return_recieved') {
+        return;
+      }
+      else {
         const extractedData = {
           orderid,
           name: rowData['Consignee Name'],
