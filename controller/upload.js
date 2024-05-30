@@ -3,6 +3,7 @@ const { maxUniqueIdModel } = require('../model/max_unique_id')
 const { Readable } = require('stream');
 const csv = require('csv-parser');
 const fs = require('fs');
+const { channel } = require('diagnostics_channel');
 const result = [];
 //Create POST /upload
 exports.uploadFile = async (req, res) => {
@@ -205,14 +206,17 @@ exports.shopifyUpload = async (req, res) => {
             let channelname;
             if ((rowData['Tags'] && rowData['Tags'].includes('COD')) || rowData['Payment Method'] && rowData['Payment Method'].includes('COD')) {
               channelname = 'Shopify Customer';
-            } else if (rowData['Tags']) {
-              channelname = 'Shopify Prepaid Customer';
-            } else {
-              channelname = '';
             }
-            if (!channelname && orderChannelMap[orderid]) {
+            else if (!channelname && orderChannelMap[orderid]) {
               channelname = orderChannelMap[orderid];
             }
+            else if (!(rowData['Payment Method'] && rowData['Tags'])) {
+              channelname = 'Shopify Customer';
+            }
+            else {
+              channelname = 'Shopify Prepaid Customer';
+            }
+
             extractedData.channelname = channelname;
             if (channelname) {
               orderChannelMap[orderid] = channelname;
@@ -289,7 +293,6 @@ exports.deliveryUpload = async (req, res) => {
       // uniqueCountersMap[source]++;
 
       const existingEntry = await clientModel.findOne({ orderid: orderid });
-      console.log(existingEntry);
       if (existingEntry && existingEntry.status != 'return_recieved') {
         const updatedData = {
           status: rowData["Current Status"].toLowerCase(),
@@ -300,7 +303,7 @@ exports.deliveryUpload = async (req, res) => {
         }
         updatedDataArray.push({ query: { orderid }, update: { $set: updatedData } });
       }
-      else if (existingEntry.status === 'return_recieved') {
+      else if (existingEntry && existingEntry.status === 'return_recieved') {
         return;
       }
       else {
@@ -319,6 +322,7 @@ exports.deliveryUpload = async (req, res) => {
           shipped_date: rowData["Pick Up Date"],
           awb: rowData["Waybill"],
           unique_id: unique_id,
+          channelname: "Calling Customer",
         };
         newDataArray.push(extractedData);
       }
