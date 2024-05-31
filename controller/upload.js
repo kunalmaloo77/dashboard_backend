@@ -1,9 +1,10 @@
+const { skuModel } = require('../model/sku');
 const { clientModel } = require('../model/client');
-const { maxUniqueIdModel } = require('../model/max_unique_id')
-const { Readable } = require('stream');
-const csv = require('csv-parser');
 const fs = require('fs');
-const { channel } = require('diagnostics_channel');
+const { promisify } = require('util');
+const unlinkAsync = promisify(fs.unlink);
+const csv = require('csv-parser');
+
 const result = [];
 //Create POST /upload
 exports.uploadFile = async (req, res) => {
@@ -67,36 +68,6 @@ exports.updateAwbBulkUpload = async (req, res) => {
   }
 }
 
-// exports.updateConfirmedBulkUpload = async (req, res) => {
-//   try {
-//     console.log(req.file);
-//     const dataArray = [];
-//     fs.createReadStream(req.file.path)
-//       .pipe(csv())
-//       .on('data', async (rowData) => {
-//         console.log(rowData);
-//         dataArray.push(rowData);
-//       })
-//       .on('end', async () => {
-//         try {
-//           let docFinal = [];
-//           for (let i = 0; i < dataArray.length; i++) {
-//             const doc = await clientModel.updateMany({ orderid: dataArray[i].orderid }, { $set: { status: dataArray[i].status } });
-//             console.log(doc);
-//             docFinal.push(doc);
-//           }
-//           console.log('CSV file successfully uploaded and processed');
-//           res.json(docFinal);
-//         } catch (error) {
-//           console.error('Error occurred while uploading data:', error);
-//           res.status(400).json(error);
-//         }
-//       });
-//   }
-//   catch (error) {
-//     console.error(error);
-//   }
-// }
 //Patch status update
 exports.statusBulkupload = async (req, res) => {
   let today = new Date();
@@ -240,6 +211,7 @@ exports.shopifyUpload = async (req, res) => {
     res.status(400).json(error);
   }
 }
+
 //POST upload call order and update already existing orders
 
 exports.deliveryUpload = async (req, res) => {
@@ -271,7 +243,6 @@ exports.deliveryUpload = async (req, res) => {
   try {
     const newDataArray = [];
     const updatedDataArray = [];
-
     // const maxUniqueIDCounters = await maxUniqueIdModel.find({});
     // const uniqueCountersMap = {};
 
@@ -281,6 +252,10 @@ exports.deliveryUpload = async (req, res) => {
 
     processCSV(fs.createReadStream(req.file.path), async (rowData) => {
       const orderid = rowData['Reference No.'];
+      const sku = await skuModel.findOne({ channelSKU: rowData['Lineitem sku'] })
+      if (!sku) {
+        await skuModel.create({ channelSKU: rowData['Lineitem sku'] });
+      }
       // const date = rowData['Pick Up Date'];
       // const lastTwoChar = Number(date.slice(-2));
       // const month = Number(date.slice(3, 5));

@@ -3,11 +3,12 @@ const { clientModel } = require('../model/client');
 //Read all /clients
 exports.getAllClients = async (req, res) => {
   try {
-    const clients = await clientModel.find();
-    res.json(clients);
+    const orders = await clientModel.find({});
+    res.status(200).json(orders);
   }
   catch (error) {
     console.log(error);
+    res.status(500);
   }
 };
 //Read GET /clients/:id
