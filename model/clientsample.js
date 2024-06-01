@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
-const clientSchema = new Schema({
+const sampleClientSchema = new Schema({
   unique_id: { type: String },
   orderid: { type: String },
   name: { type: String },
@@ -25,6 +25,6 @@ const clientSchema = new Schema({
   shipped_date: { type: Date },
 });
 
-clientSchema.index({ orderid: 1, sku: 1 }, { unique: true });
+sampleClientSchema.index({ orderid: 1, sku: 1 }, { unique: true });
 
-exports.clientModel = mongoose.model('Client', clientSchema);
+exports.sampleClientModel = mongoose.model('sampleClient', sampleClientSchema);

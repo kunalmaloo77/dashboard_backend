@@ -10,6 +10,8 @@ uploadRouter
   .post('/', upload.single('csv'), uploadController.uploadFile)
   .post('/shopify', upload.single('csv'), uploadController.shopifyUpload)
   .post('/delivery', upload.single('csv'), uploadController.deliveryUpload)
+  .post('/pagazo', upload.single('csv'), uploadController.pagazoUpload)
+  .post('/dealshunter', upload.single('csv'), uploadController.dealHunterUpload)
   .patch('/awb/bulkupload', upload.single('csv'), uploadController.updateAwbBulkUpload)
   .patch('/status', upload.single('csv'), uploadController.statusBulkupload)
 
