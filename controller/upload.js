@@ -259,7 +259,6 @@ exports.deliveryUpload = async (req, res) => {
     // });
 
     processCSV(fs.createReadStream(req.file.path), async (rowData) => {
-      const orderid = rowData['Reference No.'];
       let orderStatus;
       if (rowData['Current Status'] == 'RETURNING_TO_ORIGIN') {
         orderStatus = 'return_intransit';
@@ -276,10 +275,7 @@ exports.deliveryUpload = async (req, res) => {
       else {
         orderStatus = rowData['Current Status'];
       }
-      const sku = await skuModel.findOne({ channelSKU: rowData['Lineitem sku'] })
-      if (!sku) {
-        await skuModel.create({ channelSKU: rowData['Lineitem sku'] });
-      }
+      const orderid = rowData['Reference No.'];
       // const date = rowData['Pick Up Date'];
       // const lastTwoChar = Number(date.slice(-2));
       // const month = Number(date.slice(3, 5));
@@ -290,13 +286,21 @@ exports.deliveryUpload = async (req, res) => {
       // unique_id = `${source}${uniqueCounter}-${month > 3 ? lastTwoChar : lastTwoChar - 1}`;
       unique_id = `${source}S`
       // uniqueCountersMap[source]++;
+      let date1 = rowData['Pick Up Date'];
+      // console.log('date1->', date1);
+      let date = rowData['Delivered Date'] && rowData['Delivered Date'];
+      // console.log('date->', date);
+      let pickUpDate, deliveredDate;
+      pickUpDate = date1 && dayjs.utc(date1, 'DD-MM-YYYY').toDate();
+      // console.log("OD->", orderDate);
+      deliveredDate = date && dayjs.utc(date, 'DD-MM-YYYY').toDate();
 
       const existingEntry = await clientModel.findOne({ orderid: orderid });
       if (existingEntry && existingEntry.status != 'return_recieved') {
         const updatedData = {
           status: rowData["Current Status"].toLowerCase(),
-          delivered_date: rowData["Delivered Date"],
-          shipped_date: rowData["Pick Up Date"],
+          delivered_date: deliveredDate,
+          shipped_date: pickUpDate,
           awb: rowData["Waybill"],
           unique_id: unique_id,
         }
@@ -314,11 +318,11 @@ exports.deliveryUpload = async (req, res) => {
           quantity: "1",
           amount: parseFloat(rowData['Amount']).toString() || '0',
           totalamount: rowData['Amount'] || '0',
-          date: rowData['Pick Up Date'],
+          date: pickUpDate,
           postalcode: rowData['PIN'],
           status: orderStatus.toLowerCase(),
-          delivered_date: rowData["Delivered Date"],
-          shipped_date: rowData["Pick Up Date"],
+          ...(deliveredDate && { delivered_date: deliveredDate }),
+          shipped_date: pickUpDate,
           awb: rowData["Waybill"],
           unique_id: unique_id,
           channelname: "Calling Customer",
@@ -702,3 +706,18 @@ exports.dealHunterUpload = async (req, res) => {
     handleError(error, res);
   }
 };
+
+exports.updateDate = async (req, res) => {
+  try {
+    // Update documents with dates in the desired format
+    const updateResult = await sampleClientModel.updateMany(
+      { "date": { $not: { $type: Date } } },  // Exclude documents with existing Date objects
+      { $set: { "date": { $dateFromString: { dateString: "$date", format: "%Y-%m-%d %H:%M:%S %z" } } } }  // Convert using $dateFromString
+    );
+
+    console.log(`${updateResult.modifiedCount} documents updated successfully.`);
+    client.close();
+  } catch (error) {
+    console.error(error);
+  }
+}
