@@ -76,7 +76,7 @@ exports.getDeliveredOrders = async (req, res) => {
 
 exports.getRtoIntransitOrders = async (req, res) => {
   try {
-    const rtointransit = await clientModel.find({ status: 'returning_to_origin' });
+    const rtointransit = await clientModel.find({ status: 'return_intransit' });
     res.json(rtointransit);
   } catch (error) {
     console.log(error);
@@ -85,7 +85,7 @@ exports.getRtoIntransitOrders = async (req, res) => {
 
 exports.getRtoDeliveredOrders = async (req, res) => {
   try {
-    const rtoDelivered = await clientModel.find({ status: 'returned_to_origin' });
+    const rtoDelivered = await clientModel.find({ status: 'return_delivered' });
     res.json(rtoDelivered);
   } catch (error) {
     console.log(error);

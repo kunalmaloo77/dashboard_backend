@@ -14,5 +14,6 @@ uploadRouter
   .post('/dealshunter', upload.single('csv'), uploadController.dealHunterUpload)
   .patch('/awb/bulkupload', upload.single('csv'), uploadController.updateAwbBulkUpload)
   .patch('/status', upload.single('csv'), uploadController.statusBulkupload)
+  .patch('/updateDate', uploadController.updateDate)
 
 module.exports = uploadRouter;
