@@ -211,7 +211,7 @@ exports.shopifyUpload = async (req, res) => {
     });
 
     // Insert data into the database
-    await clientModel.insertMany(dataArray, { ordered: true });
+    await clientModel.insertMany(dataArray, { ordered: false });
     console.log('CSV file successfully uploaded and processed');
     res.status(200).send('CSV file uploaded and processed');
   } catch (error) {
