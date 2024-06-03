@@ -251,41 +251,28 @@ exports.deliveryUpload = async (req, res) => {
   try {
     const newDataArray = [];
     const updatedDataArray = [];
-    // const maxUniqueIDCounters = await maxUniqueIdModel.find({});
-    // const uniqueCountersMap = {};
-
-    // maxUniqueIDCounters.forEach(counter => {
-    //   uniqueCountersMap[counter.source] = counter.maxID;
-    // });
 
     processCSV(fs.createReadStream(req.file.path), async (rowData) => {
       let orderStatus;
-      if (rowData['Current Status'] == 'RETURNING_TO_ORIGIN') {
+      if (rowData['Current Status'] === 'RETURNING_TO_ORIGIN') {
         orderStatus = 'return_intransit';
       }
-      else if (rowData['Current Status'] == 'OUT_FOR_DELIVERY') {
+      else if (rowData['Current Status'] === 'OUT_FOR_DELIVERY') {
         orderStatus = 'shipped';
       }
-      else if (rowData['Current Status'] == 'RETURNED_TO_ORIGIN') {
+      else if (rowData['Current Status'] === 'RETURNED_TO_ORIGIN') {
         orderStatus = 'return_delivered';
       }
-      else if (rowData['Current Status'] == 'READY_FOR_PICKUP') {
+      else if (rowData['Current Status'] === 'READY_FOR_PICKUP') {
         orderStatus = 'ready_to_ship';
       }
       else {
         orderStatus = rowData['Current Status'];
       }
       const orderid = rowData['Reference No.'];
-      // const date = rowData['Pick Up Date'];
-      // const lastTwoChar = Number(date.slice(-2));
-      // const month = Number(date.slice(3, 5));
-
       let unique_id;
-      const source = orderid[0] == '#' || 'K' ? 'K' : 'C';
-      // let uniqueCounter = uniqueCountersMap[source];
-      // unique_id = `${source}${uniqueCounter}-${month > 3 ? lastTwoChar : lastTwoChar - 1}`;
+      const source = orderid[0] == '#' || orderid[0] == 'K' ? 'K' : 'C';
       unique_id = `${source}S`
-      // uniqueCountersMap[source]++;
       let date1 = rowData['Pick Up Date'];
       // console.log('date1->', date1);
       let date = rowData['Delivered Date'] && rowData['Delivered Date'];
@@ -298,8 +285,8 @@ exports.deliveryUpload = async (req, res) => {
       const existingEntry = await clientModel.findOne({ orderid: orderid });
       if (existingEntry && existingEntry.status != 'return_recieved') {
         const updatedData = {
-          status: rowData["Current Status"].toLowerCase(),
-          delivered_date: deliveredDate,
+          status: orderStatus.toLowerCase(),
+          ...(deliveredDate && { delivered_date: deliveredDate }),
           shipped_date: pickUpDate,
           awb: rowData["Waybill"],
           unique_id: unique_id,
@@ -364,8 +351,6 @@ exports.deliveryUpload = async (req, res) => {
         }
         res.send('CSV file uploaded and processed');
       });
-    // await maxUniqueIdModel.updateOne({ source: 'K' }, { maxID: uniqueCountersMap['K'] });
-    // await maxUniqueIdModel.updateOne({ source: 'C' }, { maxID: uniqueCountersMap['C'] });
   } catch (error) {
     handleError(error, res);
   }
