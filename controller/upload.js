@@ -278,9 +278,9 @@ exports.deliveryUpload = async (req, res) => {
       let date = rowData['Delivered Date'] && rowData['Delivered Date'];
       // console.log('date->', date);
       let pickUpDate, deliveredDate;
-      pickUpDate = date1 && dayjs.utc(date1, 'DD-MM-YYYY').toDate();
+      pickUpDate = date1 && dayjs.utc(date1, 'DD/MM/YYYY').toDate();
       // console.log("OD->", orderDate);
-      deliveredDate = date && dayjs.utc(date, 'DD-MM-YYYY').toDate();
+      deliveredDate = date && dayjs.utc(date, 'DD/MM/YYYY').toDate();
 
       const existingEntry = await clientModel.findOne({ orderid: orderid });
       if (existingEntry && existingEntry.status != 'return_recieved') {
