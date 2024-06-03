@@ -26,9 +26,20 @@ exports.getClient = async (req, res) => {
 
 //Read clients without address
 exports.getOrders = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
   try {
-    const orders = await clientModel.find({ address: { $exists: false } });
-    res.json(orders);
+    const orders = await clientModel.find({ address: { $exists: false } })
+      .skip((page - 1) * limit)
+      .limit(limit);
+    const totalItems = await clientModel.countDocuments({ address: { $exists: false } });
+    const totalPages = Math.ceil(totalItems / limit);
+    res.json({
+      orders,
+      totalItems,
+      totalPages,
+      currentPage: page,
+    });
   }
   catch (error) {
     console.log(error);
@@ -37,9 +48,20 @@ exports.getOrders = async (req, res) => {
 
 //Read clients with address and without awb
 exports.getWithoutAwbOrders = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
   try {
-    const withoutawb = await clientModel.find({ address: { $exists: true }, awb: { $exists: false } });
-    res.json(withoutawb);
+    const items = await clientModel.find({ address: { $exists: true }, awb: { $exists: false } })
+      .skip((page - 1) * limit)
+      .limit(limit);
+    const totalItems = await clientModel.countDocuments({ address: { $exists: true }, awb: { $exists: false } });
+    const totalPages = Math.ceil(totalItems / limit);
+    res.json({
+      items,
+      totalItems,
+      totalPages,
+      currentPage: page,
+    });
   } catch (error) {
     console.log(error);
   }
@@ -47,9 +69,20 @@ exports.getWithoutAwbOrders = async (req, res) => {
 
 // get clients with awb
 exports.getConfirmedOrders = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
   try {
-    const confirmed = await clientModel.find({ awb: { $exists: true }, status: 'ready_to_ship' });
-    res.json(confirmed);
+    const confirmed = await clientModel.find({ awb: { $exists: true }, status: 'ready_to_ship' })
+      .skip((page - 1) * limit)
+      .limit(limit);
+    const totalItems = await clientModel.countDocuments({ awb: { $exists: true }, status: 'ready_to_ship' });
+    const totalPages = Math.ceil(totalItems / limit);
+    res.json({
+      confirmed,
+      totalItems,
+      totalPages,
+      currentPage: page,
+    });
   } catch (error) {
     console.log(error);
   }
@@ -57,45 +90,102 @@ exports.getConfirmedOrders = async (req, res) => {
 
 //Read clients with awb and status
 exports.getShippedOrders = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
   try {
-    const shipped = await clientModel.find({ status: { $in: ['shipped', 'out_for_delivery'] } });
-    res.json(shipped);
+    const shipped = await clientModel.find({ status: { $in: ['shipped', 'out_for_delivery'] } })
+      .skip((page - 1) * limit)
+      .limit(limit);
+    const totalItems = await clientModel.countDocuments({ status: { $in: ['shipped', 'out_for_delivery'] } });
+    const totalPages = Math.ceil(totalItems / limit);
+    res.json({
+      shipped,
+      totalItems,
+      totalPages,
+      currentPage: page,
+    });
   } catch (error) {
     console.log(error);
   }
 }
 
 exports.getDeliveredOrders = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
   try {
-    const delivered = await clientModel.find({ status: "delivered" });
-    res.json(delivered);
+    const delivered = await clientModel.find({ status: "delivered" })
+      .skip((page - 1) * limit)
+      .limit(limit);
+    const totalItems = await clientModel.countDocuments({ status: "delivered" });
+    const totalPages = Math.ceil(totalItems / limit);
+    res.json({
+      delivered,
+      totalItems,
+      totalPages,
+      currentPage: page,
+    });
   } catch (error) {
     console.log(error);
   }
 }
 
 exports.getRtoIntransitOrders = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
   try {
-    const rtointransit = await clientModel.find({ status: 'return_intransit' });
-    res.json(rtointransit);
+    const rtointransit = await clientModel.find({ status: 'return_intransit' })
+      .skip((page - 1) * limit)
+      .limit(limit);
+    const totalItems = await clientModel.countDocuments({ status: "return_intransit" });
+    const totalPages = Math.ceil(totalItems / limit);
+
+    res.json({
+      rtointransit,
+      totalItems,
+      totalPages,
+      currentPage: page,
+    });
+
   } catch (error) {
     console.log(error);
   }
 }
 
 exports.getRtoDeliveredOrders = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
   try {
-    const rtoDelivered = await clientModel.find({ status: 'return_delivered' });
-    res.json(rtoDelivered);
+    const rtoDelivered = await clientModel.find({ status: 'return_delivered' })
+      .skip((page - 1) * limit)
+      .limit(limit);
+    const totalItems = await clientModel.countDocuments({ status: "return_delivered" });
+    const totalPages = Math.ceil(totalItems / limit);
+    res.json({
+      rtoDelivered,
+      totalItems,
+      totalPages,
+      currentPage: page,
+    });
   } catch (error) {
     console.log(error);
   }
 }
 
 exports.getRtoRecievedOrders = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
   try {
-    const rtoRecieved = await clientModel.find({ status: 'return_recieved' });
-    res.json(rtoRecieved);
+    const rtoRecieved = await clientModel.find({ status: 'return_recieved' })
+      .skip((page - 1) * limit)
+      .limit(limit);
+    const totalItems = await clientModel.countDocuments({ status: "return_recieved" });
+    const totalPages = Math.ceil(totalItems / limit);
+    res.json({
+      rtoRecieved,
+      totalItems,
+      totalPages,
+      currentPage: page,
+    });
   } catch (error) {
     console.log(error);
   }

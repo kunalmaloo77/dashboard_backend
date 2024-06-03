@@ -23,6 +23,7 @@ const clientSchema = new Schema({
   date: { type: Date },
   delivered_date: { type: Date },
   shipped_date: { type: Date },
+  retrun_recieved_date: { type: Date },
 });
 
 clientSchema.index({ orderid: 1, sku: 1 }, { unique: true });
