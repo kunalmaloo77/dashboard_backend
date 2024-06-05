@@ -210,8 +210,14 @@ exports.getClientAwb = async (req, res) => {
 exports.getClientOrderid = async (req, res) => {
   try {
     const orderid = req.params.orderid;
-    const oid = '#' + orderid;
+    const isHashed = req.query.isHashed;
+    let oid = orderid;
+    if (isHashed == 0) {
+      oid = '#' + orderid;
+    }
+    console.log(oid);
     const client = await clientModel.findOne({ orderid: oid });
+    console.log(client);
     if (!client) {
       return res.status(404).json({ message: "OrderId not found" });
     }
@@ -226,11 +232,18 @@ exports.getClientOrderid = async (req, res) => {
 exports.updateAwbStatus = async (req, res) => {
   try {
     const awb = req.params.awb;
+    console.log(awb);
     const client = await clientModel.findOne({ awb: awb });
     if (!client) {
       return res.status(404).json({ message: "AWB not found" });
     }
-    const updatedClient = await clientModel.updateOne({ awb: awb }, { "$set": { status: "return_recieved" } });
+    const currentDate = new Date();
+    const updatedClient = await clientModel.updateMany({ awb: awb }, {
+      "$set": {
+        status: "return_recieved",
+        return_recieved_date: currentDate
+      }
+    });
     res.json(updatedClient);
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
@@ -241,12 +254,25 @@ exports.updateAwbStatus = async (req, res) => {
 exports.updateOrderIdStatus = async (req, res) => {
   try {
     const orderid = req.params.orderid;
-    const oid = '#' + orderid;
+    // const oid = '#' + orderid;
+    const isHashed = req.query.isHashed;
+    console.log(isHashed);
+    let oid = orderid;
+    if (isHashed == 0) {
+      oid = '#' + orderid;
+    }
+    console.log(oid);
     const client = await clientModel.findOne({ orderid: oid });
     if (!client) {
       return res.status(404).json({ message: "OrderId not found" });
     }
-    const updatedClient = await clientModel.updateMany({ orderid: oid }, { "$set": { status: "return_recieved" } })
+    const currentDate = new Date();
+    const updatedClient = await clientModel.updateMany({ orderid: oid }, {
+      "$set": {
+        status: "return_recieved",
+        return_recieved_date: currentDate
+      }
+    })
     res.json(updatedClient);
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });

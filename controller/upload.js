@@ -1,8 +1,6 @@
 const { skuModel } = require('../model/sku');
 const { clientModel } = require('../model/client');
 const fs = require('fs');
-const { promisify } = require('util');
-const unlinkAsync = promisify(fs.unlink);
 const csv = require('csv-parser');
 const { sampleClientModel } = require('../model/clientsample');
 const dayjs = require('dayjs');
@@ -251,23 +249,26 @@ exports.deliveryUpload = async (req, res) => {
   try {
     const newDataArray = [];
     const updatedDataArray = [];
+    skuArray = [];
 
     processCSV(fs.createReadStream(req.file.path), async (rowData) => {
       let orderStatus;
-      if (rowData['Current Status'] === 'RETURNING_TO_ORIGIN') {
-        orderStatus = 'return_intransit';
-      }
-      else if (rowData['Current Status'] === 'OUT_FOR_DELIVERY') {
-        orderStatus = 'shipped';
-      }
-      else if (rowData['Current Status'] === 'RETURNED_TO_ORIGIN') {
-        orderStatus = 'return_delivered';
-      }
-      else if (rowData['Current Status'] === 'READY_FOR_PICKUP') {
-        orderStatus = 'ready_to_ship';
-      }
-      else {
-        orderStatus = rowData['Current Status'];
+
+      switch (rowData['Current Status']) {
+        case 'RETURNING_TO_ORIGIN':
+          orderStatus = 'return_intransit';
+          break;
+        case 'OUT_FOR_DELIVERY':
+          orderStatus = 'shipped';
+          break;
+        case 'RETURNED_TO_ORIGIN':
+          orderStatus = 'return_delivered';
+          break;
+        case 'READY_FOR_PICKUP':
+          orderStatus = 'ready_to_ship';
+          break;
+        default:
+          orderStatus = rowData['Current Status'];
       }
       const orderid = rowData['Reference No.'];
       let unique_id;
@@ -278,11 +279,15 @@ exports.deliveryUpload = async (req, res) => {
       let date = rowData['Delivered Date'] && rowData['Delivered Date'];
       // console.log('date->', date);
       let pickUpDate, deliveredDate;
-      pickUpDate = date1 && dayjs.utc(date1, 'YYYY-MM-DD').toDate();
+      pickUpDate = date1 && dayjs.utc(date1, 'DD-MM-YYYY').toDate();
       // console.log("OD->", orderDate);
-      deliveredDate = date && dayjs.utc(date, 'YYYY-MM-DD').toDate();
+      deliveredDate = date && dayjs.utc(date, 'DD-MM-YYYY').toDate();
 
-      const existingEntry = await clientModel.findOne({ orderid: orderid });
+      const sku = await skuModel.findOne({ channelSKU: rowData['Product Description'] });
+      if (!sku) {
+        skuArray.push({ channelSKU: rowData['Product Description'].trim() });
+      }
+      const existingEntry = await sampleClientModel.findOne({ orderid: orderid });
       if (existingEntry && existingEntry.status != 'return_recieved') {
         const updatedData = {
           status: orderStatus.toLowerCase(),
@@ -320,6 +325,7 @@ exports.deliveryUpload = async (req, res) => {
       async () => {
         // Bulk operations for updating existing entries and inserting new ones
         const bulkOps = [];
+        const bulkSkuOps = [];
         if (updatedDataArray.length > 0) {
           updatedDataArray.forEach(({ query, update }) => {
             bulkOps.push({
@@ -341,9 +347,28 @@ exports.deliveryUpload = async (req, res) => {
           }
         }
 
+        if (skuArray.length > 0) {
+          for (let i = 0; i < skuArray.length; i++) {
+            bulkSkuOps.push({
+              insertOne: {
+                document: skuArray[i]
+              }
+            })
+          }
+        }
+
+        if (bulkSkuOps.length > 0) {
+          try {
+            await skuModel.bulkWrite(bulkSkuOps, { ordered: false });
+            console.log("Sku Uploaded")
+          } catch (error) {
+            console.log("Error bulkwriting sku->", error);
+          }
+        }
+
         if (bulkOps.length > 0) {
           try {
-            await clientModel.bulkWrite(bulkOps, { ordered: false });
+            await sampleClientModel.bulkWrite(bulkOps, { ordered: false });
             console.log('Delivery Orders Uploaded');
           } catch (error) {
             console.log("Error bulkwriting->", error);

@@ -1,6 +1,6 @@
 const express = require('express');
 const clientController = require('../controller/client.js')
-
+const skuController = require('../controller/skuUpload.js')
 const clientRouter = express.Router();
 
 clientRouter
@@ -19,6 +19,7 @@ clientRouter
   .get('/rtorecieved', clientController.getRtoRecievedOrders)
   .get('/:id', clientController.getClient)
   .post('/', clientController.createClient)
+  .post('/skuUpload', skuController.uploadSku)
   .put('/:id', clientController.replaceClient)
   .patch('/:id', clientController.updateClient)
   .patch('/awb/:id', clientController.updateManyClients)
