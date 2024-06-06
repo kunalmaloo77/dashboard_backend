@@ -32,12 +32,15 @@ exports.uploadSku = async (req, res) => {
     processCSV(fs.createReadStream(req.file.path), async (rowData) => {
       const sku = await skuModel.findOne({ channelSKU: rowData['channelSKU'] });
       if (!sku) {
-        skuArray.push({ channelSKU: rowData['channelSKU'].trim() });
+        skuArray.push({
+          channelSKU: rowData['channelSKU'].trim(),
+          mainSKU: rowData['mainSKU'],
+          size: rowData['size']
+        });
       }
     }, async () => {
       // Bulk operations for updating existing entries and inserting new ones
       const bulkSkuOps = [];
-      // console.log("bulkOPs->", bulkOps)
 
       if (skuArray.length > 0) {
         for (let i = 0; i < skuArray.length; i++) {
@@ -48,6 +51,7 @@ exports.uploadSku = async (req, res) => {
           })
         }
       }
+      // console.log("bulkSkuOPs->", bulkSkuOps)
 
       if (bulkSkuOps.length > 0) {
         try {
@@ -62,6 +66,6 @@ exports.uploadSku = async (req, res) => {
     });
 
   } catch (error) {
-
+    handleError(error, res);
   }
 }
