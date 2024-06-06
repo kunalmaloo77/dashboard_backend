@@ -249,8 +249,7 @@ exports.deliveryUpload = async (req, res) => {
   try {
     const newDataArray = [];
     const updatedDataArray = [];
-    skuArray = [];
-
+    // const skuArray = [];
     processCSV(fs.createReadStream(req.file.path), async (rowData) => {
       let orderStatus;
 
@@ -275,19 +274,17 @@ exports.deliveryUpload = async (req, res) => {
       const source = orderid[0] == '#' || orderid[0] == 'K' ? 'K' : 'C';
       unique_id = `${source}S`
       let date1 = rowData['Pick Up Date'];
-      // console.log('date1->', date1);
       let date = rowData['Delivered Date'] && rowData['Delivered Date'];
-      // console.log('date->', date);
       let pickUpDate, deliveredDate;
       pickUpDate = date1 && dayjs.utc(date1, 'DD-MM-YYYY').toDate();
-      // console.log("OD->", orderDate);
       deliveredDate = date && dayjs.utc(date, 'DD-MM-YYYY').toDate();
 
-      const sku = await skuModel.findOne({ channelSKU: rowData['Product Description'] });
-      if (!sku) {
-        skuArray.push({ channelSKU: rowData['Product Description'].trim() });
-      }
-      const existingEntry = await sampleClientModel.findOne({ orderid: orderid });
+      // const sku = await skuModel.findOne({ channelSKU: rowData['Product Description'] });
+      // if (!sku) {
+      //   skuArray.push({ channelSKU: rowData['Product Description'].trim() });
+      // }
+
+      const existingEntry = await clientModel.findOne({ orderid: orderid });
       if (existingEntry && existingEntry.status != 'return_recieved') {
         const updatedData = {
           status: orderStatus.toLowerCase(),
@@ -325,7 +322,7 @@ exports.deliveryUpload = async (req, res) => {
       async () => {
         // Bulk operations for updating existing entries and inserting new ones
         const bulkOps = [];
-        const bulkSkuOps = [];
+        // const bulkSkuOps = [];
         if (updatedDataArray.length > 0) {
           updatedDataArray.forEach(({ query, update }) => {
             bulkOps.push({
@@ -347,33 +344,34 @@ exports.deliveryUpload = async (req, res) => {
           }
         }
 
-        if (skuArray.length > 0) {
-          for (let i = 0; i < skuArray.length; i++) {
-            bulkSkuOps.push({
-              insertOne: {
-                document: skuArray[i]
-              }
-            })
-          }
-        }
+        // if (skuArray.length > 0) {
+        //   for (let i = 0; i < skuArray.length; i++) {
+        //     bulkSkuOps.push({
+        //       insertOne: {
+        //         document: skuArray[i]
+        //       }
+        //     })
+        //   }
+        // }
 
-        if (bulkSkuOps.length > 0) {
-          try {
-            await skuModel.bulkWrite(bulkSkuOps, { ordered: false });
-            console.log("Sku Uploaded")
-          } catch (error) {
-            console.log("Error bulkwriting sku->", error);
-          }
-        }
+        // if (bulkSkuOps.length > 0) {
+        //   try {
+        //     await skuModel.bulkWrite(bulkSkuOps, { ordered: false });
+        //     console.log("Sku Uploaded")
+        //   } catch (error) {
+        //     console.log("Error bulkwriting sku->", error);
+        //   }
+        // }
 
         if (bulkOps.length > 0) {
           try {
-            await sampleClientModel.bulkWrite(bulkOps, { ordered: false });
+            await clientModel.bulkWrite(bulkOps, { ordered: false });
             console.log('Delivery Orders Uploaded');
           } catch (error) {
             console.log("Error bulkwriting->", error);
           }
         }
+        // res.status(100).json({ length: skuArray.length });
         res.send('CSV file uploaded and processed');
       });
   } catch (error) {
