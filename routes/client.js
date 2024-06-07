@@ -1,9 +1,12 @@
 const express = require('express');
 const clientController = require('../controller/client.js')
+const skuController = require('../controller/skuUpload.js')
 const clientRouter = express.Router();
 
 clientRouter
   .get('/', clientController.getAllClients)
+  .get('/skuList', skuController.getUnmappedSku)
+  .get('/skuListfull', skuController.getfullUnmappedSku)
   .get('/awb/single/:awb', clientController.getClientAwb)
   .get('/orderid/single/:orderid', clientController.getClientOrderid)
   .get('/awb/status/:awb', clientController.updateAwbStatus)

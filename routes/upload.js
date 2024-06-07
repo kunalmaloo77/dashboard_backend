@@ -17,5 +17,6 @@ uploadRouter
   .patch('/awb/bulkupload', upload.single('csv'), uploadController.updateAwbBulkUpload)
   .patch('/status', upload.single('csv'), uploadController.statusBulkupload)
   .patch('/updateDate', uploadController.updateDate)
+  .post('/unmapped', skuController.saveUnmappedSku)
 
 module.exports = uploadRouter;

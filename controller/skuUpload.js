@@ -1,6 +1,7 @@
 const { skuModel } = require('../model/sku');
 const fs = require('fs');
 const csv = require('csv-parser');
+const { clientModel } = require('../model/client');
 
 exports.uploadSku = async (req, res) => {
   console.log("HI");
@@ -67,5 +68,41 @@ exports.uploadSku = async (req, res) => {
 
   } catch (error) {
     handleError(error, res);
+  }
+}
+
+exports.saveUnmappedSku = async (req, res) => {
+  const data = req.body.unMappedSku;
+  // console.log(data);
+  try {
+    const newItem = await skuModel.insertMany(data, { ordered: false })
+    res.status(201).send(newItem);
+  } catch (error) {
+    console.log(error, "<-unmapped upload error");
+  }
+}
+
+exports.getUnmappedSku = async (req, res) => {
+  try {
+    const response = await skuModel.find({ mainSKU: { $exists: false } })
+    res.status(200).json(response);
+  } catch (error) {
+    res.status(404);
+    console.log(error);
+  }
+}
+
+exports.getfullUnmappedSku = async (req, res) => {
+  console.log("hi");
+  try {
+    const respo = await clientModel.find({});
+    // console.log(respo);
+    const allSKUs = await skuModel.find({}).select('channelSKU');
+    const skuSet = new Set(allSKUs.map(item => item.channelSKU));
+    const notFound = respo.filter(item => !skuSet.has(item.sku) && item.sku.length > 0);
+    res.status(200).json(notFound);
+  } catch (error) {
+    res.status(404);
+    console.log(error);
   }
 }

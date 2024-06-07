@@ -1,10 +1,22 @@
 const { clientModel } = require('../model/client');
+const { skuModel } = require('../model/sku');
 
 //Read all /clients
 exports.getAllClients = async (req, res) => {
   try {
-    const orders = await clientModel.find({});
-    res.status(200).json(orders);
+    const orders = await clientModel.find({}).lean();
+    const skuPromises = orders.map(async (order) => {
+      if (order.address && order.address.includes('"')) {
+        order.address = order.address.replace(/"/g, '');
+        // console.log(order.address);
+      }
+      const res = await skuModel.find({ channelSKU: order?.sku }).lean();
+      return res;
+    });
+
+    const Sku = await Promise.all(skuPromises);
+    console.log(Sku);
+    res.status(200).json({ Sku, orders });
   }
   catch (error) {
     console.log(error);
@@ -28,13 +40,20 @@ exports.getClient = async (req, res) => {
 exports.getOrders = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
+  const Sku = [];
   try {
     const orders = await clientModel.find({ address: { $exists: false } })
       .skip((page - 1) * limit)
       .limit(limit);
+    for (let i = 0; i < limit; i++) {
+      const item_sku = orders[i]?.sku;
+      const res = await skuModel.find({ channelSKU: item_sku });
+      Sku.push(res);
+    }
     const totalItems = await clientModel.countDocuments({ address: { $exists: false } });
     const totalPages = Math.ceil(totalItems / limit);
     res.json({
+      Sku,
       orders,
       totalItems,
       totalPages,
@@ -50,13 +69,20 @@ exports.getOrders = async (req, res) => {
 exports.getWithoutAwbOrders = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
+  const Sku = [];
   try {
     const items = await clientModel.find({ address: { $exists: true }, awb: { $exists: false } })
       .skip((page - 1) * limit)
       .limit(limit);
+    for (let i = 0; i < limit; i++) {
+      const item_sku = items[i]?.sku;
+      const res = await skuModel.find({ channelSKU: item_sku });
+      Sku.push(res);
+    }
     const totalItems = await clientModel.countDocuments({ address: { $exists: true }, awb: { $exists: false } });
     const totalPages = Math.ceil(totalItems / limit);
     res.json({
+      Sku,
       items,
       totalItems,
       totalPages,
@@ -71,13 +97,20 @@ exports.getWithoutAwbOrders = async (req, res) => {
 exports.getConfirmedOrders = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
+  const Sku = [];
   try {
     const confirmed = await clientModel.find({ awb: { $exists: true }, status: 'ready_to_ship' })
       .skip((page - 1) * limit)
       .limit(limit);
+    for (let i = 0; i < limit; i++) {
+      const item_sku = confirmed[i]?.sku;
+      const res = await skuModel.find({ channelSKU: item_sku });
+      Sku.push(res);
+    }
     const totalItems = await clientModel.countDocuments({ awb: { $exists: true }, status: 'ready_to_ship' });
     const totalPages = Math.ceil(totalItems / limit);
     res.json({
+      Sku,
       confirmed,
       totalItems,
       totalPages,
