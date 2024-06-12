@@ -10,8 +10,12 @@ exports.getAllClients = async (req, res) => {
         order.address = order.address.replace(/"/g, '');
         // console.log(order.address);
       }
-      const res = await skuModel.find({ channelSKU: order?.sku }).lean();
-      return res;
+      if (order.sku) {
+        const res = await skuModel.findOne({ channelSKU: order.sku }).lean();
+        return res;
+      } else {
+        return {};
+      }
     });
 
     const Sku = await Promise.all(skuPromises);
