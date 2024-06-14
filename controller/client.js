@@ -4,29 +4,29 @@ const { skuModel } = require('../model/sku');
 //Read all /clients
 exports.getAllClients = async (req, res) => {
   try {
-    const orders = await clientModel.find({}).lean();
-    const skuPromises = orders.map(async (order) => {
+    const cursor = clientModel.find({}).lean().cursor();
+
+    const orders = [];
+    const Sku = [];
+
+    for (let order = await cursor.next(); order != null; order = await cursor.next()) {
       if (order.address && order.address.includes('"')) {
         order.address = order.address.replace(/"/g, '');
-        // console.log(order.address);
       }
       if (order.sku) {
-        const res = await skuModel.findOne({ channelSKU: order.sku }).lean();
-        return res;
-      } else {
-        return {};
+        const sku = await skuModel.findOne({ channelSKU: order.sku }).lean();
+        Sku.push(sku);
       }
-    });
+      orders.push(order);
+    }
 
-    const Sku = await Promise.all(skuPromises);
-    console.log(Sku);
     res.status(200).json({ Sku, orders });
-  }
-  catch (error) {
-    console.log(error);
-    res.status(500);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Internal Server Error');
   }
 };
+
 //Read GET /clients/:id
 exports.getClient = async (req, res) => {
   const id = req.params.id;
