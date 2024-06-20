@@ -106,8 +106,8 @@ exports.statusBulkupload = async (req, res) => {
           let docFinal = [];
           for (let i = 0; i < dataArray.length; i++) {
             let update = {};
-            if (dataArray[i].status === 'shipped') {
-              update = { status: "shipped", shipped_date: today };
+            if (dataArray[i].status === 'in-tranist') {
+              update = { status: "in-tranist", shipped_date: today };
               console.log(update);
             } else if (dataArray[i].status === 'delivered') {
               update = { status: "delivered", delivered_date: today };
@@ -257,8 +257,9 @@ exports.deliveryUpload = async (req, res) => {
         case 'RETURNING_TO_ORIGIN':
           orderStatus = 'return_intransit';
           break;
+        case 'SHIPPED':
         case 'OUT_FOR_DELIVERY':
-          orderStatus = 'shipped';
+          orderStatus = 'in-transit';
           break;
         case 'RETURNED_TO_ORIGIN':
           orderStatus = 'return_delivered';
@@ -448,9 +449,6 @@ exports.pagazoUpload = async (req, res) => {
         else if (rowData['Order Status'] == 'RTO_INITIATED') {
           orderStatus = 'return_intransit';
         }
-        else if (rowData['Order Status'] == 'IN-TRANSIT') {
-          orderStatus = 'shipped';
-        }
         else {
           orderStatus = rowData['Order Status'];
         }
@@ -615,9 +613,6 @@ exports.dealHunterUpload = async (req, res) => {
         }
         else if (rowData['Order Status'] == 'RTO_INITIATED') {
           orderStatus = 'return_intransit';
-        }
-        else if (rowData['Order Status'] == 'IN-TRANSIT') {
-          orderStatus = 'shipped';
         }
         else {
           orderStatus = rowData['Order Status'];

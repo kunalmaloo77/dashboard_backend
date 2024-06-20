@@ -5,6 +5,7 @@ const clientRouter = express.Router();
 
 clientRouter
   .get('/', clientController.getAllClients)
+  .get('/api/date', clientController.dateFilter)
   .get('/skuList', skuController.getUnmappedSku)
   .get('/skuListfull', skuController.getfullUnmappedSku)
   .get('/awb/single/:awb', clientController.getClientAwb)

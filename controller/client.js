@@ -383,3 +383,38 @@ exports.deleteClient = async (req, res) => {
     res.status(400).json(err);
   }
 };
+
+//Date Filter
+exports.dateFilter = async (req, res) => {
+  try {
+    const startDate = new Date(req.query.startDate);
+    const endDate = new Date(req.query.endDate);
+    startDate.setUTCHours(0, 0, 0, 0);
+    endDate.setUTCHours(0, 0, 0, 0);
+
+    const result = await clientModel.aggregate([
+      {
+        $match: {
+          shipped_date: { $gte: startDate, $lte: endDate },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            date: { $dateToString: { format: "%Y-%m-%d", date: "$shipped_date" } },
+            status: "$status"
+          },
+          totalOrder: { $sum: 1 },
+        }
+      },
+      {
+        $sort: { "_id": 1 }
+      }
+    ]);
+
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Server Error' });
+  }
+}
