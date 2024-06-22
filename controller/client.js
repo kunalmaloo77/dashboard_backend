@@ -3,22 +3,34 @@ const { skuModel } = require('../model/sku');
 
 //Read all /clients
 exports.getAllClients = async (req, res) => {
+  const startDate = new Date(req.query.startDate);
+  const endDate = new Date(req.query.endDate);
+  const query = {
+    date: {
+      $gte: startDate,
+      $lte: endDate
+    }
+  };
+
   try {
-    const cursor = clientModel.find({}).lean().cursor();
+    const cursor = clientModel.find(query).lean().cursor();
 
     const orders = [];
-    const Sku = [];
+    const skuSet = new Set();
 
     for (let order = await cursor.next(); order != null; order = await cursor.next()) {
       if (order.address && order.address.includes('"')) {
         order.address = order.address.replace(/"/g, '');
       }
       if (order.sku) {
-        const sku = await skuModel.findOne({ channelSKU: order.sku }).lean();
-        Sku.push(sku);
+        skuSet.add(order.sku);
       }
       orders.push(order);
     }
+
+    const skuArray = Array.from(skuSet);
+    const skuPromises = skuArray.map(sku => skuModel.findOne({ channelSKU: sku }).lean());
+    const Sku = await Promise.all(skuPromises);
 
     res.status(200).json({ Sku, orders });
   } catch (error) {
@@ -26,6 +38,7 @@ exports.getAllClients = async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 };
+
 
 //Read GET /clients/:id
 exports.getClient = async (req, res) => {
