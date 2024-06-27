@@ -143,10 +143,10 @@ exports.getShippedOrders = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
   try {
-    const shipped = await clientModel.find({ status: { $in: ['shipped', 'out_for_delivery'] } })
+    const shipped = await clientModel.find({ status: { $in: ['in-transit'] } })
       .skip((page - 1) * limit)
       .limit(limit);
-    const totalItems = await clientModel.countDocuments({ status: { $in: ['shipped', 'out_for_delivery'] } });
+    const totalItems = await clientModel.countDocuments({ status: { $in: ['in-transit'] } });
     const totalPages = Math.ceil(totalItems / limit);
     res.json({
       shipped,
