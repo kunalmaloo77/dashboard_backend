@@ -249,7 +249,6 @@ exports.deliveryUpload = async (req, res) => {
   try {
     const newDataArray = [];
     const updatedDataArray = [];
-    // const skuArray = [];
     processCSV(fs.createReadStream(req.file.path), async (rowData) => {
       let orderStatus;
 
@@ -279,11 +278,6 @@ exports.deliveryUpload = async (req, res) => {
       let pickUpDate, deliveredDate;
       pickUpDate = date1 && dayjs.utc(date1, 'DD-MM-YYYY').toDate();
       deliveredDate = date && dayjs.utc(date, 'DD-MM-YYYY').toDate();
-
-      // const sku = await skuModel.findOne({ channelSKU: rowData['Product Description'] });
-      // if (!sku) {
-      //   skuArray.push({ channelSKU: rowData['Product Description'].trim() });
-      // }
 
       const existingEntry = await clientModel.findOne({ orderid: orderid });
       if (existingEntry && existingEntry.status != 'return_recieved') {
@@ -345,25 +339,6 @@ exports.deliveryUpload = async (req, res) => {
           }
         }
 
-        // if (skuArray.length > 0) {
-        //   for (let i = 0; i < skuArray.length; i++) {
-        //     bulkSkuOps.push({
-        //       insertOne: {
-        //         document: skuArray[i]
-        //       }
-        //     })
-        //   }
-        // }
-
-        // if (bulkSkuOps.length > 0) {
-        //   try {
-        //     await skuModel.bulkWrite(bulkSkuOps, { ordered: false });
-        //     console.log("Sku Uploaded")
-        //   } catch (error) {
-        //     console.log("Error bulkwriting sku->", error);
-        //   }
-        // }
-
         if (bulkOps.length > 0) {
           try {
             await clientModel.bulkWrite(bulkOps, { ordered: false });
@@ -419,17 +394,24 @@ exports.pagazoUpload = async (req, res) => {
       orderDate = date1 && dayjs.utc(date1, 'HH:mm A, DD/MM/YYYY').toDate();
       // console.log("OD->", orderDate);
       settlementDate = date && dayjs.utc(date, 'DD/MM/YYYY HH:mm').toDate();
-      // console.log("ST->", settlementDate);
-
-      // const sku = await skuModel.findOne({ channelSKU: rowData['Sku ID'] })
-      // if (!sku) {
-      //   await skuModel.create({ channelSKU: rowData['Sku ID'] });
-      // }
+      let orderStatus;
+      if (rowData['Order Status'] == 'HANDOVER' || rowData['Order Status'] == 'PRINT') {
+        orderStatus = 'ready_to_ship';
+      }
+      else if (rowData['Order Status'] == 'RTO_ACKNOWLEDGED' || rowData['Order Status'] == 'RTO_DELIVERED') {
+        orderStatus = 'return_delivered';
+      }
+      else if (rowData['Order Status'] == 'RTO_INITIATED') {
+        orderStatus = 'return_intransit';
+      }
+      else {
+        orderStatus = rowData['Order Status'];
+      }
 
       const existingEntry = await clientModel.findOne({ orderid: orderid });
       if (existingEntry && existingEntry.status != 'return_recieved') {
         const updatedData = {
-          status: rowData["Order Status"].toLowerCase(),
+          status: orderStatus.toLowerCase(),
           delivered_date: rowData["Delivered Date"],
           shipped_date: rowData["Pick Up Date"],
         }
@@ -439,20 +421,6 @@ exports.pagazoUpload = async (req, res) => {
         return;
       }
       else {
-        let orderStatus;
-        if (rowData['Order Status'] == 'HANDOVER' || rowData['Order Status'] == 'PRINT') {
-          orderStatus = 'ready_to_ship';
-        }
-        else if (rowData['Order Status'] == 'RTO_ACKNOWLEDGED' || rowData['Order Status'] == 'RTO_DELIVERED') {
-          orderStatus = 'return_delivered';
-        }
-        else if (rowData['Order Status'] == 'RTO_INITIATED') {
-          orderStatus = 'return_intransit';
-        }
-        else {
-          orderStatus = rowData['Order Status'];
-        }
-
         let data = rowData['Customer Address'];
 
         function reverseString(str) {
@@ -584,17 +552,25 @@ exports.dealHunterUpload = async (req, res) => {
       orderDate = date1 && dayjs.utc(date1, 'HH:mm A, DD/MM/YYYY').toDate();
       // console.log("OD->", orderDate);
       settlementDate = date && dayjs.utc(date, 'DD/MM/YYYY HH:mm').toDate();
-      // console.log("ST->", settlementDate);
 
-      // const sku = await skuModel.findOne({ channelSKU: rowData['Sku ID'] })
-      // if (!sku) {
-      //   await skuModel.create({ channelSKU: rowData['Sku ID'] });
-      // }
+      let orderStatus;
+      if (rowData['Order Status'] == 'HANDOVER' || rowData['Order Status'] == 'PRINT') {
+        orderStatus = 'ready_to_ship';
+      }
+      else if (rowData['Order Status'] == 'RTO_ACKNOWLEDGED' || rowData['Order Status'] == 'RTO_DELIVERED') {
+        orderStatus = 'return_delivered';
+      }
+      else if (rowData['Order Status'] == 'RTO_INITIATED') {
+        orderStatus = 'return_intransit';
+      }
+      else {
+        orderStatus = rowData['Order Status'];
+      }
 
       const existingEntry = await clientModel.findOne({ orderid: orderid });
       if (existingEntry && existingEntry.status != 'return_recieved') {
         const updatedData = {
-          status: rowData["Order Status"].toLowerCase(),
+          status: orderStatus.toLowerCase(),
           delivered_date: rowData["Delivered Date"],
           shipped_date: rowData["Pick Up Date"],
         }
@@ -604,20 +580,6 @@ exports.dealHunterUpload = async (req, res) => {
         return;
       }
       else {
-        let orderStatus;
-        if (rowData['Order Status'] == 'HANDOVER' || rowData['Order Status'] == 'PRINT') {
-          orderStatus = 'ready_to_ship';
-        }
-        else if (rowData['Order Status'] == 'RTO_ACKNOWLEDGED' || rowData['Order Status'] == 'RTO_DELIVERED') {
-          orderStatus = 'return_delivered';
-        }
-        else if (rowData['Order Status'] == 'RTO_INITIATED') {
-          orderStatus = 'return_intransit';
-        }
-        else {
-          orderStatus = rowData['Order Status'];
-        }
-
         let data = rowData['Customer Address'];
 
         function reverseString(str) {
