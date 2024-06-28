@@ -16,21 +16,25 @@ exports.getAllClients = async (req, res) => {
     const cursor = clientModel.find(query).lean().cursor();
 
     const orders = [];
-    const skuSet = new Set();
+    const skuArray = [];
 
     for (let order = await cursor.next(); order != null; order = await cursor.next()) {
       if (order.address && order.address.includes('"')) {
         order.address = order.address.replace(/"/g, '');
       }
       if (order.sku) {
-        skuSet.add(order.sku);
+        skuArray.push(order.sku);
+      }
+      else {
+        skuArray.push("NA");
       }
       orders.push(order);
     }
 
-    const skuArray = Array.from(skuSet);
     const skuPromises = skuArray.map(sku => skuModel.findOne({ channelSKU: sku }).lean());
     const Sku = await Promise.all(skuPromises);
+    console.log(Sku.length, "<-sku");
+    console.log(orders.length, "<-order");
 
     res.status(200).json({ Sku, orders });
   } catch (error) {
