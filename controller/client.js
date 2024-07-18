@@ -33,8 +33,6 @@ exports.getAllClients = async (req, res) => {
 
     const skuPromises = skuArray.map(sku => skuModel.findOne({ channelSKU: sku }).lean());
     const Sku = await Promise.all(skuPromises);
-    console.log(Sku.length, "<-sku");
-    console.log(orders.length, "<-order");
 
     res.status(200).json({ Sku, orders });
   } catch (error) {
@@ -407,7 +405,7 @@ exports.dateFilter = async (req, res) => {
     const startDate = new Date(req.query.startDate);
     const endDate = new Date(req.query.endDate);
     startDate.setUTCHours(0, 0, 0, 0);
-    endDate.setUTCHours(0, 0, 0, 0);
+    endDate.setUTCHours(23, 59, 59, 0);
 
     const result = await clientModel.aggregate([
       {
