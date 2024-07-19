@@ -5,7 +5,10 @@ const clientRouter = express.Router();
 
 clientRouter
   .get('/', clientController.getAllClients)
-  .get('/api/date', clientController.dateFilter)
+  .get('/api/date/all', clientController.dateFilter)
+  .get('/api/date/shopify', clientController.shopifyDateFilter)
+  .get('/api/date/dealshunter', clientController.dealshunterDateFilter)
+  .get('/api/date/pagazo', clientController.pagazoDateFilter)
   .get('/skuList', skuController.getUnmappedSku)
   .get('/skuListfull', skuController.getfullUnmappedSku)
   .get('/awb/single/:awb', clientController.getClientAwb)
