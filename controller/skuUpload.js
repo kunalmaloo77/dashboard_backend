@@ -30,18 +30,32 @@ exports.uploadSku = async (req, res) => {
   };
   try {
     skuArray = [];
+    updateSkuArray = [];
+    updatedChannelSku = [];
     processCSV(fs.createReadStream(req.file.path), async (rowData) => {
-      const sku = await skuModel.findOne({ channelSKU: rowData['channelSKU'] });
-      if (!sku) {
-        skuArray.push({
-          channelSKU: rowData['channelSKU'].trim(),
-          mainSKU: rowData['mainSKU'],
-          size: rowData['size']
-        });
+      const channelSKU = rowData['channelSKU'];
+      if (channelSKU) {
+        const sku = await skuModel.findOne({ channelSKU: channelSKU.trim() });
+        if (!sku) {
+          skuArray.push({
+            channelSKU: channelSKU.trim(),
+            mainSKU: rowData['mainSKU'],
+            size: rowData['size']
+          });
+        }
+        if (!sku.mainSKU) {
+          console.log("sku->", sku);
+          updatedChannelSku.push({ channelSKU: rowData['channelSKU'] })
+          updateSkuArray.push({
+            mainSKU: rowData['mainSKU'],
+            size: rowData['size']
+          })
+        }
       }
     }, async () => {
       // Bulk operations for updating existing entries and inserting new ones
       const bulkSkuOps = [];
+      const bulkUpdateSkuOps = [];
 
       if (skuArray.length > 0) {
         for (let i = 0; i < skuArray.length; i++) {
@@ -52,7 +66,17 @@ exports.uploadSku = async (req, res) => {
           })
         }
       }
-      // console.log("bulkSkuOPs->", bulkSkuOps)
+
+      if (updateSkuArray.length > 0) {
+        for (let i = 0; i < updateSkuArray.length; i++) {
+          bulkUpdateSkuOps.push({
+            updateOne: {
+              filter: { channelSKU: updatedChannelSku[i].channelSKU.trim() },
+              update: { $set: updateSkuArray[i] },
+            }
+          })
+        }
+      }
 
       if (bulkSkuOps.length > 0) {
         try {
@@ -63,6 +87,14 @@ exports.uploadSku = async (req, res) => {
         }
       }
 
+      if (bulkUpdateSkuOps.length > 0) {
+        try {
+          await skuModel.bulkWrite(bulkUpdateSkuOps, { ordered: false });
+          console.log("Sku Updated");
+        } catch (error) {
+          console.log("Error bulkupdating sku->", error);
+        }
+      }
       res.send('CSV file uploaded and processed');
     });
 
@@ -95,11 +127,10 @@ exports.getUnmappedSku = async (req, res) => {
 exports.getfullUnmappedSku = async (req, res) => {
   console.log("hi");
   try {
-    const respo = await clientModel.find({});
-    // console.log(respo);
     const allSKUs = await skuModel.find({}).select('channelSKU');
+    const respo = await clientModel.find({});
     const skuSet = new Set(allSKUs.map(item => item.channelSKU));
-    const notFound = respo.filter(item => !skuSet.has(item.sku) && item.sku.length > 0);
+    const notFound = respo.filter(item => item?.sku && !skuSet.has(item.sku));
     res.status(200).json(notFound);
   } catch (error) {
     res.status(404);

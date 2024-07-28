@@ -538,3 +538,15 @@ exports.pagazoDateFilter = async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 }
+
+exports.getMobileClient = async (req, res) => {
+  const id = req.params.id;
+  try {
+    const doc = await clientModel.find({ mobilenumber: id });
+    res.status(201).json(doc);
+  }
+  catch (err) {
+    console.log(err);
+    res.status(400).json(err);
+  }
+}
