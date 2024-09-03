@@ -1,5 +1,5 @@
-const { clientModel } = require('../model/client');
-const { skuModel } = require('../model/sku');
+const { clientModel } = require("../model/client");
+const { skuModel } = require("../model/sku");
 
 //Read all /clients
 exports.getAllClients = async (req, res) => {
@@ -8,8 +8,8 @@ exports.getAllClients = async (req, res) => {
   const query = {
     date: {
       $gte: startDate,
-      $lte: endDate
-    }
+      $lte: endDate,
+    },
   };
 
   try {
@@ -18,38 +18,41 @@ exports.getAllClients = async (req, res) => {
     const orders = [];
     const skuArray = [];
 
-    for (let order = await cursor.next(); order != null; order = await cursor.next()) {
+    for (
+      let order = await cursor.next();
+      order != null;
+      order = await cursor.next()
+    ) {
       if (order.address && order.address.includes('"')) {
-        order.address = order.address.replace(/"/g, '');
+        order.address = order.address.replace(/"/g, "");
       }
       if (order.sku) {
         skuArray.push(order.sku);
-      }
-      else {
+      } else {
         skuArray.push("NA");
       }
       orders.push(order);
     }
 
-    const skuPromises = skuArray.map(sku => skuModel.findOne({ channelSKU: sku }).lean());
+    const skuPromises = skuArray.map((sku) =>
+      skuModel.findOne({ channelSKU: sku }).lean()
+    );
     const Sku = await Promise.all(skuPromises);
 
     res.status(200).json({ Sku, orders });
   } catch (error) {
     console.error(error);
-    res.status(500).send('Internal Server Error');
+    res.status(500).send("Internal Server Error");
   }
 };
-
 
 //Read GET /clients/:id
 exports.getClient = async (req, res) => {
   const id = req.params.id;
   try {
-    const doc = await clientModel.findOne({ orderid: id })
+    const doc = await clientModel.findOne({ orderid: id });
     res.status(201).json(doc);
-  }
-  catch (err) {
+  } catch (err) {
     console.log(err);
     res.status(400).json(err);
   }
@@ -61,7 +64,9 @@ exports.getOrders = async (req, res) => {
   const limit = parseInt(req.query.limit) || 20;
   const Sku = [];
   try {
-    const orders = await clientModel.find({ address: { $exists: false } })
+    const orders = await clientModel
+      .find({ address: { $exists: false } })
+      .sort({ date: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
     for (let i = 0; i < limit; i++) {
@@ -69,7 +74,9 @@ exports.getOrders = async (req, res) => {
       const res = await skuModel.find({ channelSKU: item_sku });
       Sku.push(res);
     }
-    const totalItems = await clientModel.countDocuments({ address: { $exists: false } });
+    const totalItems = await clientModel.countDocuments({
+      address: { $exists: false },
+    });
     const totalPages = Math.ceil(totalItems / limit);
     res.json({
       Sku,
@@ -78,11 +85,10 @@ exports.getOrders = async (req, res) => {
       totalPages,
       currentPage: page,
     });
-  }
-  catch (error) {
+  } catch (error) {
     console.log(error);
   }
-}
+};
 
 //Read clients with address and without awb
 exports.getWithoutAwbOrders = async (req, res) => {
@@ -90,7 +96,9 @@ exports.getWithoutAwbOrders = async (req, res) => {
   const limit = parseInt(req.query.limit) || 20;
   const Sku = [];
   try {
-    const items = await clientModel.find({ address: { $exists: true }, awb: { $exists: false } })
+    const items = await clientModel
+      .find({ address: { $exists: true }, awb: { $exists: false } })
+      .sort({ date: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
     for (let i = 0; i < limit; i++) {
@@ -98,7 +106,10 @@ exports.getWithoutAwbOrders = async (req, res) => {
       const res = await skuModel.find({ channelSKU: item_sku });
       Sku.push(res);
     }
-    const totalItems = await clientModel.countDocuments({ address: { $exists: true }, awb: { $exists: false } });
+    const totalItems = await clientModel.countDocuments({
+      address: { $exists: true },
+      awb: { $exists: false },
+    });
     const totalPages = Math.ceil(totalItems / limit);
     res.json({
       Sku,
@@ -110,7 +121,7 @@ exports.getWithoutAwbOrders = async (req, res) => {
   } catch (error) {
     console.log(error);
   }
-}
+};
 
 // get clients with awb
 exports.getConfirmedOrders = async (req, res) => {
@@ -118,7 +129,9 @@ exports.getConfirmedOrders = async (req, res) => {
   const limit = parseInt(req.query.limit) || 20;
   const Sku = [];
   try {
-    const confirmed = await clientModel.find({ awb: { $exists: true }, status: 'ready_to_ship' })
+    const confirmed = await clientModel
+      .find({ awb: { $exists: true }, status: "ready_to_ship" })
+      .sort({ date: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
     for (let i = 0; i < limit; i++) {
@@ -126,7 +139,10 @@ exports.getConfirmedOrders = async (req, res) => {
       const res = await skuModel.find({ channelSKU: item_sku });
       Sku.push(res);
     }
-    const totalItems = await clientModel.countDocuments({ awb: { $exists: true }, status: 'ready_to_ship' });
+    const totalItems = await clientModel.countDocuments({
+      awb: { $exists: true },
+      status: "ready_to_ship",
+    });
     const totalPages = Math.ceil(totalItems / limit);
     res.json({
       Sku,
@@ -138,17 +154,21 @@ exports.getConfirmedOrders = async (req, res) => {
   } catch (error) {
     console.log(error);
   }
-}
+};
 
 //Read clients with awb and status
 exports.getShippedOrders = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
   try {
-    const shipped = await clientModel.find({ status: { $in: ['in-transit'] } })
+    const shipped = await clientModel
+      .find({ status: { $in: ["in-transit"] } })
+      .sort({ date: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
-    const totalItems = await clientModel.countDocuments({ status: { $in: ['in-transit'] } });
+    const totalItems = await clientModel.countDocuments({
+      status: { $in: ["in-transit"] },
+    });
     const totalPages = Math.ceil(totalItems / limit);
     res.json({
       shipped,
@@ -159,16 +179,41 @@ exports.getShippedOrders = async (req, res) => {
   } catch (error) {
     console.log(error);
   }
-}
+};
 
 exports.getDeliveredOrders = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
   try {
-    const delivered = await clientModel.find({ status: "delivered" })
+    const deliveredWithDate = await clientModel
+      .find({ status: "delivered", delivered_date: { $exists: true } })
+      .sort({ delivered_date: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
-    const totalItems = await clientModel.countDocuments({ status: "delivered" });
+
+    const totalItemsWithDate = await clientModel.countDocuments({
+      status: "delivered",
+      delivered_date: { $exists: true },
+    });
+
+    let delivered = deliveredWithDate;
+    const deliveredWithDatePage = Math.ceil(totalItemsWithDate / limit);
+
+    if (deliveredWithDate.length < limit && totalItemsWithDate > 0) {
+      const remainingLimit = limit - deliveredWithDate.length;
+      const deliveredWithoutDate = await clientModel
+        .find({ status: "delivered", delivered_date: { $exists: false } })
+        .sort({ date: -1 })
+        .skip((page - deliveredWithDatePage - 1) * remainingLimit)
+        .limit(remainingLimit);
+      delivered = [...deliveredWithDate, ...deliveredWithoutDate];
+    }
+
+    const totalItemsWithoutDate = await clientModel.countDocuments({
+      status: "delivered",
+      delivered_date: { $exists: false },
+    });
+    const totalItems = totalItemsWithDate + totalItemsWithoutDate;
     const totalPages = Math.ceil(totalItems / limit);
     res.json({
       delivered,
@@ -179,16 +224,20 @@ exports.getDeliveredOrders = async (req, res) => {
   } catch (error) {
     console.log(error);
   }
-}
+};
 
 exports.getRtoIntransitOrders = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
   try {
-    const rtointransit = await clientModel.find({ status: 'return_intransit' })
+    const rtointransit = await clientModel
+      .find({ status: "return_intransit" })
+      .sort({ date: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
-    const totalItems = await clientModel.countDocuments({ status: "return_intransit" });
+    const totalItems = await clientModel.countDocuments({
+      status: "return_intransit",
+    });
     const totalPages = Math.ceil(totalItems / limit);
 
     res.json({
@@ -197,20 +246,23 @@ exports.getRtoIntransitOrders = async (req, res) => {
       totalPages,
       currentPage: page,
     });
-
   } catch (error) {
     console.log(error);
   }
-}
+};
 
 exports.getRtoDeliveredOrders = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
   try {
-    const rtoDelivered = await clientModel.find({ status: 'return_delivered' })
+    const rtoDelivered = await clientModel
+      .find({ status: "return_delivered" })
+      .sort({ date: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
-    const totalItems = await clientModel.countDocuments({ status: "return_delivered" });
+    const totalItems = await clientModel.countDocuments({
+      status: "return_delivered",
+    });
     const totalPages = Math.ceil(totalItems / limit);
     res.json({
       rtoDelivered,
@@ -221,16 +273,20 @@ exports.getRtoDeliveredOrders = async (req, res) => {
   } catch (error) {
     console.log(error);
   }
-}
+};
 
 exports.getRtoRecievedOrders = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
   try {
-    const rtoRecieved = await clientModel.find({ status: 'return_recieved' })
+    const rtoRecieved = await clientModel
+      .find({ status: "return_recieved" })
+      .sort({ date: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
-    const totalItems = await clientModel.countDocuments({ status: "return_recieved" });
+    const totalItems = await clientModel.countDocuments({
+      status: "return_recieved",
+    });
     const totalPages = Math.ceil(totalItems / limit);
     res.json({
       rtoRecieved,
@@ -241,7 +297,7 @@ exports.getRtoRecievedOrders = async (req, res) => {
   } catch (error) {
     console.log(error);
   }
-}
+};
 
 //Read single GET /clients/awb/single/:awb
 exports.getClientAwb = async (req, res) => {
@@ -251,7 +307,10 @@ exports.getClientAwb = async (req, res) => {
     if (!client) {
       return res.status(404).json({ message: "AWB not found" });
     }
-    const updatedClient = await clientModel.updateMany({ awb: awb }, { "$set": { status: "shipped" } })
+    const updatedClient = await clientModel.updateMany(
+      { awb: awb },
+      { $set: { status: "in-transit" } }
+    );
     res.json(updatedClient);
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
@@ -265,7 +324,7 @@ exports.getClientOrderid = async (req, res) => {
     const isHashed = req.query.isHashed;
     let oid = orderid;
     if (isHashed == 0) {
-      oid = '#' + orderid;
+      oid = "#" + orderid;
     }
     console.log(oid);
     const client = await clientModel.findOne({ orderid: oid });
@@ -273,7 +332,10 @@ exports.getClientOrderid = async (req, res) => {
     if (!client) {
       return res.status(404).json({ message: "OrderId not found" });
     }
-    const updatedClient = await clientModel.updateMany({ orderid: oid }, { "$set": { status: "shipped" } })
+    const updatedClient = await clientModel.updateMany(
+      { orderid: oid },
+      { $set: { status: "shipped" } }
+    );
     res.json(updatedClient);
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
@@ -290,12 +352,15 @@ exports.updateAwbStatus = async (req, res) => {
       return res.status(404).json({ message: "AWB not found" });
     }
     const currentDate = new Date();
-    const updatedClient = await clientModel.updateMany({ awb: awb }, {
-      "$set": {
-        status: "return_recieved",
-        return_recieved_date: currentDate
+    const updatedClient = await clientModel.updateMany(
+      { awb: awb },
+      {
+        $set: {
+          status: "return_recieved",
+          return_recieved_date: currentDate,
+        },
       }
-    });
+    );
     res.json(updatedClient);
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
@@ -311,7 +376,7 @@ exports.updateOrderIdStatus = async (req, res) => {
     console.log(isHashed);
     let oid = orderid;
     if (isHashed == 0) {
-      oid = '#' + orderid;
+      oid = "#" + orderid;
     }
     console.log(oid);
     const client = await clientModel.findOne({ orderid: oid });
@@ -319,12 +384,15 @@ exports.updateOrderIdStatus = async (req, res) => {
       return res.status(404).json({ message: "OrderId not found" });
     }
     const currentDate = new Date();
-    const updatedClient = await clientModel.updateMany({ orderid: oid }, {
-      "$set": {
-        status: "return_recieved",
-        return_recieved_date: currentDate
+    const updatedClient = await clientModel.updateMany(
+      { orderid: oid },
+      {
+        $set: {
+          status: "return_recieved",
+          return_recieved_date: currentDate,
+        },
       }
-    })
+    );
     res.json(updatedClient);
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
@@ -338,8 +406,7 @@ exports.createClient = async (req, res) => {
     const doc = await clientDoc.save();
     console.log(doc);
     res.status(201).json(doc);
-  }
-  catch (error) {
+  } catch (error) {
     console.error(error);
     res.status(400).json(error);
   }
@@ -349,10 +416,11 @@ exports.createClient = async (req, res) => {
 exports.replaceClient = async (req, res) => {
   const id = req.params.id;
   try {
-    const doc = await clientModel.findOneAndReplace({ _id: id }, req.body, { new: true })
+    const doc = await clientModel.findOneAndReplace({ _id: id }, req.body, {
+      new: true,
+    });
     res.status(201).json(doc);
-  }
-  catch (err) {
+  } catch (err) {
     console.log(err);
     res.status(400).json(err);
   }
@@ -362,38 +430,40 @@ exports.replaceClient = async (req, res) => {
 exports.updateClient = async (req, res) => {
   const id = req.params.id;
   try {
-    const doc = await clientModel.updateMany({ orderid: id }, req.body, { new: true })
-    res.status(201).json(doc);
-  }
-  catch (err) {
-    console.log(err);
-    res.status(400).json(err);
-  }
-};
-
-
-//Update awb PATCH /clients/awb/:id
-exports.updateManyClients = async (req, res) => {
-  const awb = req.body.awb;
-  const orderid = req.params.id;
-
-  try {
-    const doc = await clientModel.updateMany({ orderid: orderid }, { $set: { awb: awb } });
+    const doc = await clientModel.updateMany({ orderid: id }, req.body, {
+      new: true,
+    });
     res.status(201).json(doc);
   } catch (err) {
     console.log(err);
     res.status(400).json(err);
   }
-}
+};
+
+//Update awb PATCH /clients/awb/:id
+exports.updateAWBClients = async (req, res) => {
+  const awb = req.body.awb;
+  const orderid = req.params.id;
+
+  try {
+    const doc = await clientModel.updateMany(
+      { orderid: orderid },
+      { $set: { awb: awb, status: "ready_to_ship" } }
+    );
+    res.status(201).json(doc);
+  } catch (err) {
+    console.log(err);
+    res.status(400).json(err);
+  }
+};
 
 //Delete DELETE /clients/:id
 exports.deleteClient = async (req, res) => {
   const id = req.params.id;
   try {
-    const doc = await clientModel.findOneAndDelete({ _id: id })
+    const doc = await clientModel.findOneAndDelete({ _id: id });
     res.status(201).json(doc);
-  }
-  catch (err) {
+  } catch (err) {
     console.log(err);
     res.status(400).json(err);
   }
@@ -416,23 +486,25 @@ exports.dateFilter = async (req, res) => {
       {
         $group: {
           _id: {
-            date: { $dateToString: { format: "%Y-%m-%d", date: "$shipped_date" } },
-            status: "$status"
+            date: {
+              $dateToString: { format: "%Y-%m-%d", date: "$shipped_date" },
+            },
+            status: "$status",
           },
           totalOrder: { $sum: 1 },
-        }
+        },
       },
       {
-        $sort: { "_id": 1 }
-      }
+        $sort: { _id: 1 },
+      },
     ]);
 
     res.json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server Error' });
+    res.status(500).json({ message: "Server Error" });
   }
-}
+};
 
 exports.shopifyDateFilter = async (req, res) => {
   try {
@@ -445,29 +517,31 @@ exports.shopifyDateFilter = async (req, res) => {
       {
         $match: {
           shipped_date: { $gte: startDate, $lte: endDate },
-          channelname: /shopify/i
+          channelname: /shopify/i,
         },
       },
       {
         $group: {
           _id: {
-            date: { $dateToString: { format: "%Y-%m-%d", date: "$shipped_date" } },
-            status: "$status"
+            date: {
+              $dateToString: { format: "%Y-%m-%d", date: "$shipped_date" },
+            },
+            status: "$status",
           },
           totalOrder: { $sum: 1 },
-        }
+        },
       },
       {
-        $sort: { "_id": 1 }
-      }
+        $sort: { _id: 1 },
+      },
     ]);
 
     res.json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server Error' });
+    res.status(500).json({ message: "Server Error" });
   }
-}
+};
 
 exports.dealshunterDateFilter = async (req, res) => {
   try {
@@ -480,29 +554,31 @@ exports.dealshunterDateFilter = async (req, res) => {
       {
         $match: {
           shipped_date: { $gte: startDate, $lte: endDate },
-          channelname: /deals/i
+          channelname: /deals/i,
         },
       },
       {
         $group: {
           _id: {
-            date: { $dateToString: { format: "%Y-%m-%d", date: "$shipped_date" } },
-            status: "$status"
+            date: {
+              $dateToString: { format: "%Y-%m-%d", date: "$shipped_date" },
+            },
+            status: "$status",
           },
           totalOrder: { $sum: 1 },
-        }
+        },
       },
       {
-        $sort: { "_id": 1 }
-      }
+        $sort: { _id: 1 },
+      },
     ]);
 
     res.json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server Error' });
+    res.status(500).json({ message: "Server Error" });
   }
-}
+};
 
 exports.pagazoDateFilter = async (req, res) => {
   try {
@@ -515,38 +591,39 @@ exports.pagazoDateFilter = async (req, res) => {
       {
         $match: {
           shipped_date: { $gte: startDate, $lte: endDate },
-          channelname: /pagazo/i
+          channelname: /pagazo/i,
         },
       },
       {
         $group: {
           _id: {
-            date: { $dateToString: { format: "%Y-%m-%d", date: "$shipped_date" } },
-            status: "$status"
+            date: {
+              $dateToString: { format: "%Y-%m-%d", date: "$shipped_date" },
+            },
+            status: "$status",
           },
           totalOrder: { $sum: 1 },
-        }
+        },
       },
       {
-        $sort: { "_id": 1 }
-      }
+        $sort: { _id: 1 },
+      },
     ]);
 
     res.json(result);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server Error' });
+    res.status(500).json({ message: "Server Error" });
   }
-}
+};
 
 exports.getMobileClient = async (req, res) => {
   const id = req.params.id;
   try {
     const doc = await clientModel.find({ mobilenumber: id });
     res.status(201).json(doc);
-  }
-  catch (err) {
+  } catch (err) {
     console.log(err);
     res.status(400).json(err);
   }
-}
+};
